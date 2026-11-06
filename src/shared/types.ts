@@ -50,6 +50,7 @@ export type DeviceState =
   | 'offline'
   | 'authorizing'
   | 'connecting'
+  | 'no-permissions'
   | 'unknown'
 
 export type DeviceConnection = 'usb' | 'wifi' | 'emulator'

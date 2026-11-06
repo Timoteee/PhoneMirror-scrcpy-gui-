@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  windows:
     runs-on: windows-latest
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: false
@@ -35,67 +35,116 @@ jobs:
       - name: Package Windows builds
         run: npm run dist
 
+      - name: Upload Windows packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: phone-mirror-windows
+          path: |
+            release/PhoneMirror-*-portable.exe
+            release/PhoneMirror-*-setup.exe
+          if-no-files-found: error
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Package Linux builds
+        run: npm run dist:linux
+
+      - name: Upload Linux packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: phone-mirror-linux
+          path: |
+            release/PhoneMirror_*.deb
+            release/PhoneMirror-*.AppImage
+          if-no-files-found: error
+
+  publish:
+    needs: [windows, linux]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: phone-mirror-*
+          merge-multiple: true
+          path: dist
+
       - name: Write SHA256 checksums
-        shell: pwsh
+        shell: bash
         run: |
-          $ErrorActionPreference = "Stop"
-          $exes = @(Get-ChildItem -Path release -Filter "PhoneMirror-*.exe" | Sort-Object Name)
-          if ($exes.Count -lt 2) {
-            Get-ChildItem release | Format-Table Name, Length
-            throw "Expected a portable exe and a setup exe in release/."
-          }
-          $portable = @($exes | Where-Object { $_.Name -like "*-portable.exe" })
-          $setup = @($exes | Where-Object { $_.Name -like "*-setup.exe" })
-          if ($portable.Count -ne 1 -or $setup.Count -ne 1) {
-            $exes | Format-Table Name, Length
-            throw "Expected PhoneMirror-*-portable.exe and PhoneMirror-*-setup.exe."
-          }
-          $lines = foreach ($file in $exes) {
-            $hash = (Get-FileHash -Algorithm SHA256 -Path $file.FullName).Hash.ToLowerInvariant()
-            "{0}  {1}" -f $hash, $file.Name
-          }
-          $out = Join-Path (Resolve-Path release) "SHA256SUMS.txt"
-          Set-Content -Path $out -Value $lines -Encoding ascii
-          Write-Host "Checksums:"
-          Get-Content $out
+          set -euo pipefail
+          cd dist
+          shopt -s nullglob
+          portables=(PhoneMirror-*-portable.exe)
+          setups=(PhoneMirror-*-setup.exe)
+          debs=(PhoneMirror_*.deb)
+          images=(PhoneMirror-*.AppImage)
+          echo "Found:"
+          ls -la
+          if [[ ${#portables[@]} -ne 1 || ${#setups[@]} -ne 1 || ${#debs[@]} -ne 1 || ${#images[@]} -ne 1 ]]; then
+            echo "Expected one portable exe, one setup exe, one deb, and one AppImage."
+            exit 1
+          fi
+          sha256sum "${portables[0]}" "${setups[0]}" "${debs[0]}" "${images[0]}" | tee SHA256SUMS.txt
 
       - name: Publish GitHub release
-        shell: pwsh
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $ErrorActionPreference = "Stop"
-          $PSNativeCommandUseErrorActionPreference = $false
-          $tag = "${{ github.ref_name }}"
-          $repo = "${{ github.repository }}"
-          $notes = Join-Path $env:RUNNER_TEMP "phone-mirror-notes.md"
-          $body = @"
-          Phone Mirror $tag for 64-bit Windows.
+          set -euo pipefail
+          tag="${{ github.ref_name }}"
+          repo="${{ github.repository }}"
+          notes="${RUNNER_TEMP}/phone-mirror-notes.md"
+          cat > "$notes" << EOF
+          Phone Mirror ${tag} for 64-bit Windows and 64-bit Linux.
+
+          Windows:
 
           - Portable (PhoneMirror-VERSION-portable.exe): one file, no installer.
           - Setup (PhoneMirror-VERSION-setup.exe): installer for the current user, with Start menu and desktop shortcuts.
 
-          These builds are not code-signed. If Windows SmartScreen appears, choose More info, then Run anyway.
+          The Windows executables are not code-signed. If SmartScreen appears, choose More info, then Run anyway.
 
-          SHA256SUMS.txt lists the SHA-256 of each executable. In PowerShell, run Get-FileHash on the file you downloaded with -Algorithm SHA256, and compare it with the matching line.
+          Linux:
+
+          - Debian package (PhoneMirror_VERSION_amd64.deb): \`sudo apt install ./PhoneMirror_*.deb\`
+          - AppImage (PhoneMirror-VERSION-x86_64.AppImage): \`chmod +x\` the file, then run it.
+
+          On Linux, USB mirroring needs your user in the plugdev group. The Debian package installs udev rules. Log out and back in after joining the group, then replug the phone. The AppImage needs the same rule copied by hand. See the README.
+
+          SHA256SUMS.txt lists the SHA-256 of each file.
 
           Phone Mirror bundles scrcpy 5.0.1, including adb.
           scrcpy: https://github.com/Genymobile/scrcpy
           scrcpy is copyright Genymobile and Romain Vimont and is licensed under the Apache License 2.0.
-          "@
-          Set-Content -Path $notes -Value $body -Encoding utf8NoBOM
+          EOF
 
-          $files = @(
-            (Resolve-Path "release\SHA256SUMS.txt").Path
-          ) + @(Get-ChildItem release -Filter "PhoneMirror-*.exe" | ForEach-Object { $_.FullName })
+          files=(dist/SHA256SUMS.txt dist/PhoneMirror-*-portable.exe dist/PhoneMirror-*-setup.exe dist/PhoneMirror_*.deb dist/PhoneMirror-*.AppImage)
+          echo "Attaching:"
+          ls -la "${files[@]}"
 
-          Write-Host "Attaching:"
-          $files | ForEach-Object { Write-Host $_ }
-
-          gh release view $tag --repo $repo
-          if ($LASTEXITCODE -eq 0) {
-            gh release upload $tag --repo $repo --clobber @files
-          } else {
-            gh release create $tag --repo $repo --title "Phone Mirror $tag" --notes-file $notes @files
-          }
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if gh release view "$tag" --repo "$repo"; then
+            gh release upload "$tag" --repo "$repo" --clobber "${files[@]}"
+          else
+            gh release create "$tag" --repo "$repo" --title "Phone Mirror $tag" --notes-file "$notes" "${files[@]}"
+          fi

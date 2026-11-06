@@ -12,7 +12,7 @@ Use the [feature request](https://github.com/Timoteee/PhoneMirror-scrcpy-gui-/is
 
 ## Developing
 
-Requirements: Node.js 22 or newer. On Windows, that is enough to run and package the app. On Linux, `npm run dev` also works; packaging the Windows exe needs Wine.
+Requirements: Node.js 22 or newer. On Windows, that is enough to run the app and build the Windows packages. On Linux, `npm run dev` and `npm run dist:linux` build the deb and AppImage. Packaging the Windows exe on Linux needs Wine.
 
 ```bash
 npm install
@@ -25,12 +25,18 @@ npm run dev
 
 ```bash
 npm run dist
+npm run dist:linux
 ```
 
-The packager does not upload anything. On Windows this writes:
+The packager does not upload anything. `npm run dist` on Windows writes:
 
-- `release/PhoneMirror-1.0.0-portable.exe`
-- `release/PhoneMirror-1.0.0-setup.exe`
+- `release/PhoneMirror-1.1.0-portable.exe`
+- `release/PhoneMirror-1.1.0-setup.exe`
+
+`npm run dist:linux` on Linux writes:
+
+- `release/PhoneMirror_1.1.0_amd64.deb`
+- `release/PhoneMirror-1.1.0-x86_64.AppImage`
 
 ## Pull requests
 

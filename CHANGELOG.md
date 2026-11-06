@@ -2,6 +2,15 @@
 
 All notable changes to Phone Mirror are documented here. Version numbers follow the releases on GitHub.
 
+## 1.1.0 — 2026-11-06
+
+Linux x64 packages, alongside the Windows builds.
+
+- Debian package (`PhoneMirror_<version>_amd64.deb`) and AppImage
+- Bundles the official scrcpy 5.0.1 Linux build, including adb
+- The Debian package installs udev rules so adb can open the phone over USB
+- A phone that Linux cannot open is labeled as a USB permission problem
+
 ## 1.0.0 — 2026-11-06
 
 First public release of Phone Mirror for 64-bit Windows.

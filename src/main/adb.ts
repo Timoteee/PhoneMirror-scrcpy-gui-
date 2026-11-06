@@ -3,11 +3,8 @@ import { parseAdbDevices, parseWifiAddress } from '@shared/devices'
 import { explainFailure, explainOrFallback, stripAnsi } from '@shared/errors'
 import { isIpv4, isSafeSerial, validateHostPort, validatePairingCode } from '@shared/settings'
 import type { ActionResult, Device, DeviceSnapshot } from '@shared/types'
+import { toolEnv } from './paths'
 import { runProcess } from './process'
-
-function adbEnv(adb: string): NodeJS.ProcessEnv {
-  return { ...process.env, ADB: adb }
-}
 
 function spawnMessage(error: string | undefined, stderr: string, stdout: string): string | null {
   const blob = `${error ?? ''}\n${stderr}\n${stdout}`
@@ -21,7 +18,7 @@ export async function listDevices(adb: string | null): Promise<DeviceSnapshot> {
       error: 'adb was not found. Reinstall Phone Mirror, or choose a scrcpy folder under Advanced.',
     }
   }
-  const result = await runProcess(adb, ['devices', '-l'], { timeoutMs: 12_000, env: adbEnv(adb) })
+  const result = await runProcess(adb, ['devices', '-l'], { timeoutMs: 12_000, env: toolEnv(adb) })
   if (result.error && !result.stdout.includes('List of devices')) {
     return { devices: [], error: spawnMessage(result.error, result.stderr, result.stdout) ?? 'Could not list phones.' }
   }
@@ -42,7 +39,7 @@ export async function connectWifi(adb: string, host: string, portRaw: string): P
   const parsed = validateHostPort(host, portRaw)
   if ('error' in parsed) return { ok: false, error: parsed.error }
   const target = endpointArg(parsed.host, parsed.port)
-  const result = await runProcess(adb, ['connect', target], { timeoutMs: 12_000, env: adbEnv(adb) })
+  const result = await runProcess(adb, ['connect', target], { timeoutMs: 12_000, env: toolEnv(adb) })
   const blob = stripAnsi(`${result.stdout}\n${result.stderr}\n${result.error ?? ''}`)
   const friendly = explainFailure(blob)
   const lowered = blob.toLowerCase()
@@ -67,7 +64,7 @@ export async function pairWifi(
   if ('error' in connect) return { ok: false, error: connect.error }
 
   const pairTarget = endpointArg(hostPort.host, hostPort.port)
-  const paired = await runProcess(adb, ['pair', pairTarget, code.code], { timeoutMs: 20_000, env: adbEnv(adb) })
+  const paired = await runProcess(adb, ['pair', pairTarget, code.code], { timeoutMs: 20_000, env: toolEnv(adb) })
   const pairBlob = stripAnsi(`${paired.stdout}\n${paired.stderr}\n${paired.error ?? ''}`)
   const pairOk = !paired.error && /successfully paired/i.test(pairBlob)
   if (!pairOk) {
@@ -82,11 +79,11 @@ export async function pairWifi(
 async function readWifiIp(adb: string, serial: string): Promise<string | null> {
   const addr = await runProcess(adb, ['-s', serial, 'shell', 'ip', '-f', 'inet', 'addr', 'show', 'wlan0'], {
     timeoutMs: 8_000,
-    env: adbEnv(adb),
+    env: toolEnv(adb),
   })
   const route = await runProcess(adb, ['-s', serial, 'shell', 'ip', 'route'], {
     timeoutMs: 8_000,
-    env: adbEnv(adb),
+    env: toolEnv(adb),
   })
   return parseWifiAddress(addr.stdout, route.stdout)
 }
@@ -107,7 +104,7 @@ export async function switchUsbToWifi(
 
   const tcpip = await runProcess(adb, ['-s', serial, 'tcpip', String(port.port)], {
     timeoutMs: 12_000,
-    env: adbEnv(adb),
+    env: toolEnv(adb),
   })
   const tcpBlob = stripAnsi(`${tcpip.stdout}\n${tcpip.stderr}`)
   if (tcpip.error || (!/restarting in tcp mode/i.test(tcpBlob) && tcpip.code !== 0)) {
@@ -131,7 +128,7 @@ export async function disconnectWifi(adb: string, serial: string, devices: Devic
   if (!device || device.connection !== 'wifi') {
     return { ok: false, error: 'That phone is not a Wi-Fi connection.' }
   }
-  const result = await runProcess(adb, ['disconnect', serial], { timeoutMs: 8_000, env: adbEnv(adb) })
+  const result = await runProcess(adb, ['disconnect', serial], { timeoutMs: 8_000, env: toolEnv(adb) })
   const blob = stripAnsi(`${result.stdout}\n${result.stderr}`)
   if (result.error) return { ok: false, error: explainOrFallback(blob, 'Could not disconnect that phone.') }
   return { ok: true, message: `Disconnected ${serial}.` }
@@ -139,10 +136,6 @@ export async function disconnectWifi(adb: string, serial: string, devices: Devic
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-export function toolEnv(adb: string): NodeJS.ProcessEnv {
-  return adbEnv(adb)
 }
 
 export function sameFolderAdb(scrcpy: string): string {

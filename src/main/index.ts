@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url'
 import { parseSettings, validateProfileName, validateSettings } from '@shared/settings'
 import type { DeviceSnapshot, LogLine, MirrorSettings, SessionInfo } from '@shared/types'
 import { connectWifi, disconnectWifi, listDevices, pairWifi, switchUsbToWifi } from './adb'
-import { licenseCandidates, resolveTools, validateScrcpyBinary } from './paths'
+import { licenseCandidates, resolveTools, toolEnv, validateScrcpyBinary } from './paths'
 import { allProfiles, readConfig, readUserProfiles, writeConfig, writeUserProfiles, type PersistedConfig } from './store'
 import { SessionManager } from './sessions'
 import { runProcess } from './process'
@@ -70,7 +70,7 @@ const sessions = new SessionManager(
 )
 
 async function readVersion(scrcpy: string, adb: string): Promise<string | null> {
-  const result = await runProcess(scrcpy, ['--version'], { timeoutMs: 8_000, env: { ...process.env, ADB: adb } })
+  const result = await runProcess(scrcpy, ['--version'], { timeoutMs: 8_000, env: toolEnv(adb) })
   const blob = `${result.stdout}\n${result.stderr}`
   const match = /scrcpy\s+([0-9][^\s]*)/i.exec(blob)
   return match?.[1] ?? null

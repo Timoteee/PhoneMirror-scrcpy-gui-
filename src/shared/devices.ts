@@ -1,7 +1,7 @@
 import { isIpv4 } from './settings'
 import type { Device, DeviceConnection, DeviceState } from './types'
 
-const KNOWN_STATES = new Set<DeviceState>(['device', 'unauthorized', 'offline', 'authorizing', 'connecting'])
+const KNOWN_STATES = new Set<DeviceState>(['device', 'unauthorized', 'offline', 'authorizing', 'connecting', 'no-permissions'])
 
 function stateOf(value: string): DeviceState {
   return KNOWN_STATES.has(value as DeviceState) ? (value as DeviceState) : 'unknown'
@@ -28,7 +28,7 @@ export function parseAdbDevices(output: string): Device[] {
     const parts = trimmed.split(/\s+/)
     if (parts.length < 2) continue
     const serial = parts[0] ?? ''
-    const state = parts[1] ?? ''
+    const state = parts[1] === 'no' && parts[2] === 'permissions' ? 'no-permissions' : (parts[1] ?? '')
     if (!/^[A-Za-z0-9._:-]+$/.test(serial)) continue
     const props: Record<string, string> = {}
     for (const part of parts.slice(2)) {

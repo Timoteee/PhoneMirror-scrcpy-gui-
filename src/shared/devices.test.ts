@@ -27,6 +27,11 @@ describe('parseAdbDevices', () => {
   it('ignores lines that are not device rows', () => {
     expect(parseAdbDevices('List of devices attached\n\n* daemon started successfully\n')).toEqual([])
   })
+
+  it('reads a Linux USB permission failure', () => {
+    const output = 'List of devices attached\nR5CW123ABC    no permissions (missing udev rules? user is not in the plugdev group); see [http://developer.android.com/tools/device.html]\n'
+    expect(parseAdbDevices(output)).toEqual([{ serial: 'R5CW123ABC', state: 'no-permissions', model: 'Android phone', connection: 'usb' }])
+  })
 })
 
 describe('parseWifiAddress', () => {
@@ -53,6 +58,10 @@ describe('explainFailure', () => {
 
   it('explains a missing phone', () => {
     expect(explainFailure('ERROR: Could not find any ADB device')).toMatch(/No phone is connected/)
+  })
+
+  it('explains a Linux USB permission failure', () => {
+    expect(explainFailure('adb: insufficient permissions for device')).toMatch(/plugdev/i)
   })
 
   it('explains a missing adb binary', () => {

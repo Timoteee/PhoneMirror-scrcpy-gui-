@@ -7,6 +7,9 @@ export function explainFailure(text: string): string | null {
   if (!raw) return null
   const t = raw.toLowerCase()
 
+  if (t.includes('no permissions') || t.includes('insufficient permissions') || (t.includes('udev') && t.includes('plugdev'))) {
+    return 'Linux cannot open the phone over USB. Add your user to the plugdev group, install the udev rules, then unplug the phone and plug it back in.'
+  }
   if (t.includes('unauthorized')) {
     return 'This phone has not been allowed yet. Unlock it and tap Allow on the USB debugging prompt.'
   }

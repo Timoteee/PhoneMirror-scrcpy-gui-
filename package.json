@@ -1,8 +1,8 @@
 {
   "name": "phone-mirror",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "A Windows desktop app that mirrors an Android phone with scrcpy.",
+  "description": "A desktop app that mirrors an Android phone with scrcpy.",
   "author": "Timoteee",
   "copyright": "Copyright (c) 2026 Timoteee",
   "license": "MIT",
@@ -17,6 +17,7 @@
   "engines": {
     "node": ">=22"
   },
+  "desktopName": "phonemirror.desktop",
   "main": "out/main/index.js",
   "scripts": {
     "predev": "node scripts/fetch-scrcpy.mjs",
@@ -26,6 +27,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "dist": "npm run build && electron-builder --win --x64 --publish never",
+    "dist:linux": "npm run build && electron-builder --linux deb AppImage --x64 --publish never",
     "icon": "python3 scripts/make-icon.py",
     "screenshots": "node scripts/screenshots.mjs"
   },

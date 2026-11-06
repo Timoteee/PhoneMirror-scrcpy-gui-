@@ -25,14 +25,22 @@ export interface ToolPaths {
 export function validateScrcpyBinary(file: string): string | null {
   const base = path.basename(file).toLowerCase()
   if (base !== 'scrcpy' && base !== 'scrcpy.exe') {
-    return 'Choose the scrcpy program (scrcpy.exe).'
+    return process.platform === 'win32' ? 'Choose the scrcpy program (scrcpy.exe).' : 'Choose the scrcpy program.'
   }
   if (!fs.existsSync(file)) return 'That file does not exist.'
   const adb = path.join(path.dirname(file), adbFileName())
   if (!fs.existsSync(adb)) {
-    return 'adb was not next to that scrcpy. Choose the folder from the official Windows release.'
+    const release = process.platform === 'win32' ? 'official Windows release' : 'official Linux build'
+    return `adb was not next to that scrcpy. Choose the scrcpy file from the ${release}.`
   }
   return null
+}
+
+export function toolEnv(adb: string): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...process.env, ADB: adb }
+  const server = path.join(path.dirname(adb), 'scrcpy-server')
+  if (fs.existsSync(server)) env.SCRCPY_SERVER_PATH = server
+  return env
 }
 
 export function resolveTools(customPath: string | null): ToolPaths | { error: string } {

@@ -5,15 +5,15 @@
 <h1 align="center">Phone Mirror</h1>
 
 <p align="center">
-  Show an Android phone on your Windows PC.<br />
-  A desktop app for <a href="https://github.com/Genymobile/scrcpy">scrcpy</a>. Plug in, or pair over Wi-Fi, and press Start.
+  Show an Android phone on your PC.<br />
+  A desktop app for <a href="https://github.com/Genymobile/scrcpy">scrcpy</a>, on Windows and Linux. Plug in, or pair over Wi-Fi, and press Start.
 </p>
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license" /></a>
   <a href="https://github.com/Timoteee/PhoneMirror-scrcpy-gui-/releases/latest"><img src="https://img.shields.io/github/v/release/Timoteee/PhoneMirror-scrcpy-gui-?display_name=tag&label=release" alt="Latest release" /></a>
   <a href="https://github.com/Timoteee/PhoneMirror-scrcpy-gui-/releases/latest"><img src="https://img.shields.io/github/downloads/Timoteee/PhoneMirror-scrcpy-gui-/latest/total" alt="Downloads of the latest release" /></a>
-  <a href="https://github.com/Timoteee/PhoneMirror-scrcpy-gui-/releases/latest"><img src="https://img.shields.io/badge/platform-Windows%20x64-0078D4" alt="Platform: Windows x64" /></a>
+  <a href="https://github.com/Timoteee/PhoneMirror-scrcpy-gui-/releases/latest"><img src="https://img.shields.io/badge/platform-Windows%20%26%20Linux-0078D4" alt="Platform: Windows and Linux, 64-bit" /></a>
   <a href="https://github.com/Genymobile/scrcpy"><img src="https://img.shields.io/badge/built%20on-scrcpy%205.0.1-3DDC84" alt="Built on scrcpy 5.0.1" /></a>
 </p>
 
@@ -44,7 +44,7 @@ The mirror window is scrcpy itself.
 - Camera or a virtual display, when you want something other than the phone screen
 - Plain-language errors, with the original scrcpy and adb log one click away
 - Light, dark, and system themes
-- Official scrcpy 5.0.1 for Windows, including `adb`, checked against the published SHA-256 sums before it is bundled
+- Official scrcpy 5.0.1 for Windows and Linux, including `adb`, checked against the published SHA-256 sums before it is bundled
 - scrcpy and adb are started with an argument array. Values you type are not passed through a shell
 
 <p align="center">
@@ -53,28 +53,87 @@ The mirror window is scrcpy itself.
 
 ## Download
 
-**Windows 10 or later, 64-bit.** Nothing is installed on the phone.
+Nothing is installed on the phone. Phone Mirror 1.1.0 is built for 64-bit Windows and 64-bit Linux.
 
 <p align="center">
   <a href="https://github.com/Timoteee/PhoneMirror-scrcpy-gui-/releases/latest"><strong>Latest release</strong></a>
 </p>
 
+### Windows
+
+Windows 10 or later.
+
 | Build | What you get |
 | --- | --- |
-| [PhoneMirror-1.0.0-portable.exe](https://github.com/Timoteee/PhoneMirror-scrcpy-gui-/releases/download/v1.0.0/PhoneMirror-1.0.0-portable.exe) | One file. No installer. Put it anywhere and run it. |
-| [PhoneMirror-1.0.0-setup.exe](https://github.com/Timoteee/PhoneMirror-scrcpy-gui-/releases/download/v1.0.0/PhoneMirror-1.0.0-setup.exe) | Installer for the current user, with Start menu and desktop shortcuts. You can choose the folder. |
-
-Each release also attaches `SHA256SUMS.txt`. After you download an exe, check it in PowerShell:
-
-```powershell
-Get-FileHash .\PhoneMirror-1.0.0-portable.exe -Algorithm SHA256
-```
-
-The hash should match the line for that file. Later releases keep the same names with a new version: `PhoneMirror-<version>-portable.exe` and `PhoneMirror-<version>-setup.exe`.
-
-### Windows SmartScreen
+| [PhoneMirror-1.1.0-portable.exe](https://github.com/Timoteee/PhoneMirror-scrcpy-gui-/releases/download/v1.1.0/PhoneMirror-1.1.0-portable.exe) | One file. No installer. Put it anywhere and run it. |
+| [PhoneMirror-1.1.0-setup.exe](https://github.com/Timoteee/PhoneMirror-scrcpy-gui-/releases/download/v1.1.0/PhoneMirror-1.1.0-setup.exe) | Installer for the current user, with Start menu and desktop shortcuts. You can choose the folder. |
 
 The executables are not code-signed. The first time you open one, SmartScreen may say that Windows protected your PC. Choose **More info**, then **Run anyway**.
+
+### Linux
+
+Ubuntu and Debian, x86_64. Other glibc distributions can use the AppImage.
+
+| Build | What you get |
+| --- | --- |
+| [PhoneMirror_1.1.0_amd64.deb](https://github.com/Timoteee/PhoneMirror-scrcpy-gui-/releases/download/v1.1.0/PhoneMirror_1.1.0_amd64.deb) | Debian package. Menu entry, `phonemirror` on the command line, and udev rules for USB. |
+| [PhoneMirror-1.1.0-x86_64.AppImage](https://github.com/Timoteee/PhoneMirror-scrcpy-gui-/releases/download/v1.1.0/PhoneMirror-1.1.0-x86_64.AppImage) | One file. No installer. |
+
+Debian package:
+
+```bash
+sudo apt install ./PhoneMirror_*.deb
+```
+
+AppImage:
+
+```bash
+chmod +x PhoneMirror-*.AppImage
+./PhoneMirror-*.AppImage
+```
+
+If the AppImage says that FUSE is missing, install `libfuse2t64` on Ubuntu 24.04 or `libfuse2` on Ubuntu 22.04, or start it with `./PhoneMirror-*.AppImage --appimage-extract-and-run`.
+
+#### USB access
+
+Wi-Fi pairing does not need this. A USB cable does. adb has to be allowed to open the phone, which on Ubuntu and Debian means the `plugdev` group and a udev rule.
+
+The Debian package copies `51-android.rules` to `/etc/udev/rules.d/51-android-phonemirror.rules` and reloads udev. You still add yourself to the group:
+
+```bash
+sudo usermod -aG plugdev "$USER"
+```
+
+Log out and back in, then unplug the phone and plug it back in. `groups` should list `plugdev`.
+
+The AppImage does not install the rule. Install the same file from this repository:
+
+```bash
+curl -fsSL -o /tmp/51-android.rules https://raw.githubusercontent.com/Timoteee/PhoneMirror-scrcpy-gui-/main/build/udev/51-android.rules
+sudo install -m 644 /tmp/51-android.rules /etc/udev/rules.d/51-android-phonemirror.rules
+sudo udevadm control --reload-rules
+sudo udevadm trigger --subsystem-match=usb
+```
+
+The rule gives the `plugdev` group access to common Android vendor ids (Google, Samsung, Xiaomi, Motorola, and others). The file in the repo lists them. A phone that still shows "USB permission denied" may need another vendor id. The longer list is at [android-udev-rules](https://github.com/M0Rf30/android-udev-rules).
+
+If another copy of adb is already running, stop it and press F5 in Phone Mirror:
+
+```bash
+adb kill-server
+```
+
+### Checksums
+
+Each release attaches `SHA256SUMS.txt` for the Windows and Linux files.
+
+```powershell
+Get-FileHash .\PhoneMirror-1.1.0-portable.exe -Algorithm SHA256
+```
+
+```bash
+sha256sum -c SHA256SUMS.txt
+```
 
 ## Quick start
 
@@ -125,7 +184,7 @@ Inside the scrcpy window, the keyboard and mouse go to the phone unless you set 
 
 ## FAQ
 
-**The phone does not appear.** Use a cable that carries data, not a charge-only cable. Unlock the phone, accept the USB debugging prompt, and press F5. On some phones you also have to set the USB mode to file transfer. If it still does not appear, try another USB port, then install the manufacturer's USB driver.
+**The phone does not appear.** Use a cable that carries data, not a charge-only cable. Unlock the phone, accept the USB debugging prompt, and press F5. On some phones you also have to set the USB mode to file transfer. On Linux, a missing udev rule looks like "USB permission denied". Follow the USB access steps above. On Windows, try another USB port, then install the manufacturer's USB driver.
 
 **It says to unlock the phone and tap Allow.** The phone is connected and waiting for the debugging prompt. Unlock it and tap Allow. Checking "Always allow from this computer" saves you from doing it every time.
 
@@ -141,13 +200,13 @@ Inside the scrcpy window, the keyboard and mouse go to the phone unless you set 
 
 **Does this install an app on the phone?** No. scrcpy starts a temporary server over adb and removes it when the session ends.
 
-**Can I use my own scrcpy?** Open **Advanced** and choose `scrcpy.exe` from an official Windows build. `adb.exe` has to sit in the same folder.
+**Can I use my own scrcpy?** Open **Advanced** and choose the scrcpy program from an official build (`scrcpy.exe` on Windows, `scrcpy` on Linux). adb has to sit in the same folder.
 
 **SmartScreen or an antivirus complains.** The download is unsigned, so SmartScreen warns on first launch. Use **More info → Run anyway** if you trust the file, and compare the SHA-256 with `SHA256SUMS.txt` first. The bundled `scrcpy.exe` and `adb.exe` are the official Genymobile binaries.
 
 ## Build from source
 
-Requirements: Node.js 22 or newer. Packaging the Windows app on Linux also needs Wine.
+Requirements: Node.js 22 or newer. Packaging the Windows app on Linux also needs Wine. The Linux packages are built on Linux.
 
 ```bash
 npm install
@@ -155,16 +214,22 @@ npm test
 npm run dev
 ```
 
-`npm run dev` and `npm run build` run `scripts/fetch-scrcpy.mjs`. That script downloads scrcpy 5.0.1 from the [official release](https://github.com/Genymobile/scrcpy/releases/tag/v5.0.1), verifies `SHA256SUMS.txt`, and unpacks the Windows x64 zip into `resources/scrcpy-win64`. On Linux and macOS it also unpacks the Linux build into `resources/scrcpy-host` so the window can be tried. The packaged exe contains only the Windows build, placed at `resources/scrcpy`.
+`npm run dev` and `npm run build` run `scripts/fetch-scrcpy.mjs`. That script downloads scrcpy 5.0.1 from the [official release](https://github.com/Genymobile/scrcpy/releases/tag/v5.0.1), verifies `SHA256SUMS.txt`, and unpacks the Windows x64 zip into `resources/scrcpy-win64`. On Linux and macOS it also unpacks the Linux build into `resources/scrcpy-host`. Packaged apps place that platform's build at `resources/scrcpy`, and the app starts scrcpy with `ADB` and `SCRCPY_SERVER_PATH` pointed at those files.
 
 ```bash
 npm run dist
+npm run dist:linux
 ```
 
 `npm run dist` is `electron-vite build` followed by `electron-builder --win --x64 --publish never`. The output is:
 
-- `release/PhoneMirror-1.0.0-portable.exe`
-- `release/PhoneMirror-1.0.0-setup.exe`
+- `release/PhoneMirror-1.1.0-portable.exe`
+- `release/PhoneMirror-1.1.0-setup.exe`
+
+`npm run dist:linux` is the same build followed by `electron-builder --linux deb AppImage --x64 --publish never`. The output is:
+
+- `release/PhoneMirror_1.1.0_amd64.deb`
+- `release/PhoneMirror-1.1.0-x86_64.AppImage`
 
 ## Contributing
 

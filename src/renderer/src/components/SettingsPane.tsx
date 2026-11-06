@@ -265,7 +265,7 @@ export function SettingsPane({
               ]}
             />
           </Field>
-          <Field label="Mouse" hint="How pointer input is sent (--mouse). Standard clicks the screen. Captured mouse is relative, like a game; Left Alt or the Windows key releases it. USB accessory only works over a cable.">
+          <Field label="Mouse" hint="How pointer input is sent (--mouse). Standard clicks the screen. Captured mouse is relative, like a game; Left Alt or the Super key releases it. USB accessory only works over a cable.">
             <Segmented
               label="Mouse"
               value={settings.mouse}

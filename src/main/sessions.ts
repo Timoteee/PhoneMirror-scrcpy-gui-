@@ -1,8 +1,10 @@
 import { spawn, type ChildProcess } from 'node:child_process'
+import path from 'node:path'
 import { tryBuildScrcpyArgs, windowTitleFor } from '@shared/args'
 import { explainFailure, stripAnsi } from '@shared/errors'
 import { isSafeSerial } from '@shared/settings'
 import type { Device, LogLine, MirrorSettings, SessionInfo } from '@shared/types'
+import { toolEnv } from './paths'
 
 interface Running {
   serial: string
@@ -45,8 +47,9 @@ export class SessionManager {
       child = spawn(scrcpy, built.args, {
         shell: false,
         windowsHide: true,
+        cwd: path.dirname(scrcpy),
         stdio: ['ignore', 'pipe', 'pipe'],
-        env: { ...process.env, ADB: adb },
+        env: toolEnv(adb),
       })
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not start scrcpy.'

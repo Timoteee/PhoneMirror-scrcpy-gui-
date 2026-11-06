@@ -12,11 +12,7 @@ directories:
 files:
   - out/**/*
   - package.json
-extraResources:
-  - from: resources/scrcpy-win64
-    to: scrcpy
-    filter:
-      - "**/*"
+afterPack: scripts/after-pack.cjs
 win:
   signExecutable: false
   target:
@@ -29,6 +25,11 @@ win:
   icon: build/icon.ico
   executableName: PhoneMirror
   requestedExecutionLevel: asInvoker
+  extraResources:
+    - from: resources/scrcpy-win64
+      to: scrcpy
+      filter:
+        - "**/*"
 portable:
   artifactName: PhoneMirror-${version}-portable.${ext}
 nsis:
@@ -41,3 +42,45 @@ nsis:
   shortcutName: Phone Mirror
   artifactName: PhoneMirror-${version}-setup.${ext}
   deleteAppDataOnUninstall: false
+linux:
+  target:
+    - target: deb
+      arch:
+        - x64
+    - target: AppImage
+      arch:
+        - x64
+  icon: build/icon.png
+  category: Utility
+  executableName: phonemirror
+  syncDesktopName: true
+  maintainer: Timoteee <Timoteee@users.noreply.github.com>
+  synopsis: Mirror an Android phone on this PC
+  extraResources:
+    - from: resources/scrcpy-host
+      to: scrcpy
+      filter:
+        - "**/*"
+    - from: build/udev
+      to: udev
+      filter:
+        - "**/*"
+deb:
+  artifactName: PhoneMirror_${version}_${arch}.${ext}
+  afterInstall: build/linux/after-install.tpl
+  afterRemove: build/linux/after-remove.tpl
+  depends:
+    - libgtk-3-0 | libgtk-3-0t64
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libxtst6 | libxtst6t64
+    - xdg-utils
+    - libatspi2.0-0 | libatspi2.0-0t64
+    - libuuid1
+    - libsecret-1-0
+    - libasound2 | libasound2t64
+    - libudev1
+    - libcap2
+appImage:
+  artifactName: PhoneMirror-${version}-${arch}.${ext}

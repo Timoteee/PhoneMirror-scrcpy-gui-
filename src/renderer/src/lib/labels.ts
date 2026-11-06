@@ -85,6 +85,7 @@ export function statusLabel(device: Device, mirroring: boolean): { text: string;
   if (device.state === 'device') return { text: 'Ready', tone: 'success' }
   if (device.state === 'unauthorized') return { text: 'Unlock the phone and tap Allow', tone: 'warning' }
   if (device.state === 'offline') return { text: 'Offline. Unplug the cable and plug it back in.', tone: 'danger' }
+  if (device.state === 'no-permissions') return { text: 'USB permission denied. Add your user to plugdev and install the udev rules.', tone: 'danger' }
   if (device.state === 'authorizing' || device.state === 'connecting') return { text: 'Waiting for the phone…', tone: 'warning' }
   return { text: 'Not ready', tone: 'muted' }
 }

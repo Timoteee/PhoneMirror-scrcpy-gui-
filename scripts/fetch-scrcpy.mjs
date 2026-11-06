@@ -128,7 +128,7 @@ async function main() {
     if (match) sums.set(match[2], match[1])
   }
   for (const asset of assets) {
-    // The Linux build is only for local development on Linux and macOS.
+    // The Linux tarball is for development on Linux and macOS, and for the Linux packages.
     if (asset.kind === 'tar' && process.platform === 'win32') continue
     await fetchAsset(asset, sums)
   }

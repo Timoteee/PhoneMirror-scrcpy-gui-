@@ -1,6 +1,6 @@
 # Third-party notices
 
-Phone Mirror bundles the official Windows x64 build of scrcpy 5.0.1, including `adb`. The build is downloaded from the scrcpy release, checked against the published `SHA256SUMS.txt`, and packed into the app as `resources/scrcpy`.
+Phone Mirror bundles the official scrcpy 5.0.1 builds, including `adb`. Windows packages contain the Windows x64 build. Linux packages contain the Linux x86_64 build. Each archive is downloaded from the scrcpy release, checked against the published `SHA256SUMS.txt`, and packed into the app as `resources/scrcpy`.
 
 ## scrcpy
 
