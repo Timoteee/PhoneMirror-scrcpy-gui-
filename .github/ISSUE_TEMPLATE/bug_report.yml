@@ -1,0 +1,68 @@
+name: Bug report
+description: Phone Mirror failed to list a phone, connect, or mirror
+title: ""
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. The session log at the bottom of the window is the most useful thing to paste. Open it after the failure and include the lines from that attempt.
+  - type: input
+    id: version
+    attributes:
+      label: Phone Mirror version
+      description: The version in the file name, for example 1.0.0.
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      description: For example, Windows 11 24H2.
+      placeholder: Windows 11
+    validations:
+      required: true
+  - type: input
+    id: phone
+    attributes:
+      label: Phone and Android version
+      placeholder: Pixel 8, Android 15
+    validations:
+      required: true
+  - type: dropdown
+    id: connection
+    attributes:
+      label: How is the phone connected?
+      options:
+        - USB
+        - Wi-Fi, already paired
+        - Wi-Fi pairing code
+        - USB to Wi-Fi
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead?
+      description: Include the sentence Phone Mirror showed, if it showed one.
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Session log
+      description: Paste the log lines from the attempt. Leave this empty if the window never opened.
+      render: text
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: A screenshot, the command preview, or a note about a VPN, extra phone, or custom scrcpy path.

@@ -1,0 +1,43 @@
+appId: app.phonemirror.desktop
+productName: Phone Mirror
+copyright: Copyright © 2026 Timoteee. Bundles scrcpy, Copyright © Genymobile and Romain Vimont, Apache-2.0.
+asar: true
+npmRebuild: false
+compression: maximum
+electronLanguages:
+  - en-US
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**/*
+  - package.json
+extraResources:
+  - from: resources/scrcpy-win64
+    to: scrcpy
+    filter:
+      - "**/*"
+win:
+  signExecutable: false
+  target:
+    - target: portable
+      arch:
+        - x64
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.ico
+  executableName: PhoneMirror
+  requestedExecutionLevel: asInvoker
+portable:
+  artifactName: PhoneMirror-${version}-portable.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  allowElevation: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Phone Mirror
+  artifactName: PhoneMirror-${version}-setup.${ext}
+  deleteAppDataOnUninstall: false

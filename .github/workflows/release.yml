@@ -1,0 +1,101 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: false
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Package Windows builds
+        run: npm run dist
+
+      - name: Write SHA256 checksums
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $exes = @(Get-ChildItem -Path release -Filter "PhoneMirror-*.exe" | Sort-Object Name)
+          if ($exes.Count -lt 2) {
+            Get-ChildItem release | Format-Table Name, Length
+            throw "Expected a portable exe and a setup exe in release/."
+          }
+          $portable = @($exes | Where-Object { $_.Name -like "*-portable.exe" })
+          $setup = @($exes | Where-Object { $_.Name -like "*-setup.exe" })
+          if ($portable.Count -ne 1 -or $setup.Count -ne 1) {
+            $exes | Format-Table Name, Length
+            throw "Expected PhoneMirror-*-portable.exe and PhoneMirror-*-setup.exe."
+          }
+          $lines = foreach ($file in $exes) {
+            $hash = (Get-FileHash -Algorithm SHA256 -Path $file.FullName).Hash.ToLowerInvariant()
+            "{0}  {1}" -f $hash, $file.Name
+          }
+          $out = Join-Path (Resolve-Path release) "SHA256SUMS.txt"
+          Set-Content -Path $out -Value $lines -Encoding ascii
+          Write-Host "Checksums:"
+          Get-Content $out
+
+      - name: Publish GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $PSNativeCommandUseErrorActionPreference = $false
+          $tag = "${{ github.ref_name }}"
+          $repo = "${{ github.repository }}"
+          $notes = Join-Path $env:RUNNER_TEMP "phone-mirror-notes.md"
+          $body = @"
+          Phone Mirror $tag for 64-bit Windows.
+
+          - Portable (PhoneMirror-VERSION-portable.exe): one file, no installer.
+          - Setup (PhoneMirror-VERSION-setup.exe): installer for the current user, with Start menu and desktop shortcuts.
+
+          These builds are not code-signed. If Windows SmartScreen appears, choose More info, then Run anyway.
+
+          SHA256SUMS.txt lists the SHA-256 of each executable. In PowerShell, run Get-FileHash on the file you downloaded with -Algorithm SHA256, and compare it with the matching line.
+
+          Phone Mirror bundles scrcpy 5.0.1, including adb.
+          scrcpy: https://github.com/Genymobile/scrcpy
+          scrcpy is copyright Genymobile and Romain Vimont and is licensed under the Apache License 2.0.
+          "@
+          Set-Content -Path $notes -Value $body -Encoding utf8NoBOM
+
+          $files = @(
+            (Resolve-Path "release\SHA256SUMS.txt").Path
+          ) + @(Get-ChildItem release -Filter "PhoneMirror-*.exe" | ForEach-Object { $_.FullName })
+
+          Write-Host "Attaching:"
+          $files | ForEach-Object { Write-Host $_ }
+
+          gh release view $tag --repo $repo
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag --repo $repo --clobber @files
+          } else {
+            gh release create $tag --repo $repo --title "Phone Mirror $tag" --notes-file $notes @files
+          }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

@@ -1,0 +1,11 @@
+node_modules
+out
+release
+dist
+*.log
+resources/scrcpy-win64
+resources/scrcpy-host
+resources/downloads
+.DS_Store
+Thumbs.db
+*.tmp

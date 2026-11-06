@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: scrcpy
+    url: https://github.com/Genymobile/scrcpy
+    about: Phone Mirror runs scrcpy. Bugs in the mirror window itself often belong upstream.
