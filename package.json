@@ -25,7 +25,7 @@
     "build": "electron-vite build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
-    "dist": "npm run build && electron-builder --win --x64",
+    "dist": "npm run build && electron-builder --win --x64 --publish never",
     "icon": "python3 scripts/make-icon.py",
     "screenshots": "node scripts/screenshots.mjs"
   },

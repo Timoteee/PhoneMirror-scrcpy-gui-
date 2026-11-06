@@ -27,7 +27,7 @@ npm run dev
 npm run dist
 ```
 
-On Windows this writes:
+The packager does not upload anything. On Windows this writes:
 
 - `release/PhoneMirror-1.0.0-portable.exe`
 - `release/PhoneMirror-1.0.0-setup.exe`

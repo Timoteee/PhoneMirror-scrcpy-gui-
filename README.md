@@ -161,7 +161,7 @@ npm run dev
 npm run dist
 ```
 
-`npm run dist` is `electron-vite build` followed by `electron-builder --win --x64`. The output is:
+`npm run dist` is `electron-vite build` followed by `electron-builder --win --x64 --publish never`. The output is:
 
 - `release/PhoneMirror-1.0.0-portable.exe`
 - `release/PhoneMirror-1.0.0-setup.exe`
