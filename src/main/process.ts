@@ -5,12 +5,14 @@ export interface ProcessResult {
   stdout: string
   stderr: string
   error?: string
+  /** True when output hit the cap and the tail was dropped. */
+  truncated?: boolean
 }
 
 export function runProcess(
   exe: string,
   args: string[],
-  options: { timeoutMs: number; env?: NodeJS.ProcessEnv },
+  options: { timeoutMs: number; env?: NodeJS.ProcessEnv; maxOutput?: number },
 ): Promise<ProcessResult> {
   return new Promise((resolve) => {
     let child: ChildProcess
@@ -34,12 +36,13 @@ export function runProcess(
     let stdout = ''
     let stderr = ''
     let settled = false
-    const cap = 200_000
+    let truncated = false
+    const cap = options.maxOutput ?? 200_000
     const finish = (result: ProcessResult) => {
       if (settled) return
       settled = true
       clearTimeout(timer)
-      resolve(result)
+      resolve(truncated ? { ...result, truncated: true } : result)
     }
     const timer = setTimeout(() => {
       child.kill()
@@ -48,9 +51,11 @@ export function runProcess(
 
     child.stdout?.on('data', (chunk: Buffer) => {
       if (stdout.length < cap) stdout += chunk.toString('utf8')
+      else truncated = true
     })
     child.stderr?.on('data', (chunk: Buffer) => {
       if (stderr.length < cap) stderr += chunk.toString('utf8')
+      else truncated = true
     })
     child.on('error', (err) => {
       finish({ code: null, stdout, stderr, error: err.message })

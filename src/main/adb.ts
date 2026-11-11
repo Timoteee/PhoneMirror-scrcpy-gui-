@@ -2,6 +2,13 @@ import path from 'node:path'
 import { parseAdbDevices, parseWifiAddress } from '@shared/devices'
 import { explainFailure, explainOrFallback, stripAnsi } from '@shared/errors'
 import { isIpv4, isSafeSerial, validateHostPort, validatePairingCode } from '@shared/settings'
+import {
+  isSafeDevicePath,
+  parseDeviceListing,
+  shellQuoteDevicePath,
+  sortDeviceEntries,
+  type FolderListing,
+} from '@shared/transfer'
 import type { ActionResult, Device, DeviceSnapshot } from '@shared/types'
 import { toolEnv } from './paths'
 import { runProcess } from './process'
@@ -33,6 +40,66 @@ export async function listDevices(adb: string | null): Promise<DeviceSnapshot> {
 
 function endpointArg(host: string, port: number): string {
   return `${host}:${port}`
+}
+
+function explainFolderBlob(blob: string): string | null {
+  const text = blob.toLowerCase()
+  if (text.includes('permission denied') || text.includes('operation not permitted')) {
+    return 'Android does not allow adb to read that folder. Try /sdcard/Download, or open the folder in the Files app on the phone.'
+  }
+  if (text.includes('not a directory')) return 'That is a file, not a folder.'
+  if (text.includes('no such file')) return 'That folder is not on the phone. Check the name and try again.'
+  return explainFailure(blob)
+}
+
+/** List one folder on the phone with `ls -la`. adb joins shell arguments, so the path is quoted. */
+export async function listDeviceFolder(
+  adb: string | null,
+  serial: string,
+  devicePath: string,
+): Promise<FolderListing> {
+  if (!adb) {
+    return {
+      path: devicePath,
+      entries: [],
+      error: 'adb was not found. Reinstall Phone Mirror, or choose a scrcpy folder under Advanced.',
+    }
+  }
+  if (!isSafeSerial(serial)) return { path: devicePath, entries: [], error: 'That phone is not available.' }
+  if (!isSafeDevicePath(devicePath)) {
+    return { path: devicePath, entries: [], error: 'Type a folder on the phone, such as /sdcard/Download.' }
+  }
+  const quoted = shellQuoteDevicePath(devicePath)
+  if (!quoted) return { path: devicePath, entries: [], error: 'That folder cannot be opened. Try its parent folder.' }
+
+  // A big folder can easily be over a megabyte of `ls -la` output; the default 200 KB cap would
+  // silently halve the list, so raise it and say so if it is ever hit.
+  const result = await runProcess(adb, ['-s', serial, 'shell', 'ls', '-la', quoted], {
+    timeoutMs: 12_000,
+    env: toolEnv(adb),
+    maxOutput: 4_000_000,
+  })
+  const blob = stripAnsi(`${result.stdout}\n${result.stderr}\n${result.error ?? ''}`)
+  const entries = parseDeviceListing(result.stdout, devicePath)
+  if (result.error) {
+    return { path: devicePath, entries: [], error: explainFolderBlob(blob) ?? 'Could not read that folder.' }
+  }
+  if (result.truncated) {
+    return {
+      path: devicePath,
+      entries: [],
+      error: 'This folder holds too many items to list. Open a folder inside it, or type a path inside it.',
+    }
+  }
+  if (result.code !== 0) {
+    return {
+      path: devicePath,
+      entries: [],
+      error:
+        explainFolderBlob(blob) ?? 'That folder could not be read. Try its parent folder, or type another path.',
+    }
+  }
+  return { path: devicePath, entries: sortDeviceEntries(entries), error: null }
 }
 
 export async function connectWifi(adb: string, host: string, portRaw: string): Promise<ActionResult> {

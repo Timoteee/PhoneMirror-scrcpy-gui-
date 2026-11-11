@@ -1,5 +1,6 @@
-import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
+import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from 'electron'
 import type { PhoneMirrorApi } from '@shared/api'
+import type { TransferUpdate } from '@shared/transfer'
 import type { DeviceSnapshot, LogLine, SessionInfo } from '@shared/types'
 
 function subscribe<T>(channel: string, cb: (payload: T) => void) {
@@ -30,6 +31,25 @@ const api: PhoneMirrorApi = {
   resetScrcpy: () => ipcRenderer.invoke('scrcpy:reset'),
   readLicense: () => ipcRenderer.invoke('app:license'),
   copyText: (text) => ipcRenderer.invoke('clipboard:write', text),
+  listDeviceFolder: (query) => ipcRenderer.invoke('files:list', query),
+  pickFiles: () => ipcRenderer.invoke('files:pick', 'files'),
+  pickFolder: () => ipcRenderer.invoke('files:pick', 'folder'),
+  pickDestination: () => ipcRenderer.invoke('files:pick', 'destination'),
+  startTransfer: (request) => ipcRenderer.invoke('transfer:start', request),
+  cancelTransfer: (id) => ipcRenderer.invoke('transfer:cancel', id),
+  onTransfer: (cb) => subscribe<TransferUpdate>('transfer:updated', cb),
+  getDroppedPaths: (files) => {
+    const paths: string[] = []
+    for (const file of files) {
+      try {
+        const value = webUtils.getPathForFile(file as never)
+        if (value) paths.push(value)
+      } catch {
+        continue
+      }
+    }
+    return paths
+  },
   captureShot: (name) => ipcRenderer.invoke('shot:capture', name),
   finishShots: () => ipcRenderer.invoke('shot:finish'),
 }

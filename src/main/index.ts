@@ -4,12 +4,14 @@ import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { parseSettings, validateProfileName, validateSettings } from '@shared/settings'
+import type { TransferRequest } from '@shared/transfer'
 import type { DeviceSnapshot, LogLine, MirrorSettings, SessionInfo } from '@shared/types'
-import { connectWifi, disconnectWifi, listDevices, pairWifi, switchUsbToWifi } from './adb'
+import { connectWifi, disconnectWifi, listDeviceFolder, listDevices, pairWifi, switchUsbToWifi } from './adb'
 import { licenseCandidates, resolveTools, toolEnv, validateScrcpyBinary } from './paths'
 import { allProfiles, readConfig, readUserProfiles, writeConfig, writeUserProfiles, type PersistedConfig } from './store'
 import { SessionManager } from './sessions'
 import { runProcess } from './process'
+import { TransferManager } from './transfer'
 
 const screenshotDir = app.isPackaged ? undefined : process.env.PHONE_MIRROR_SCREENSHOT_DIR
 
@@ -68,6 +70,32 @@ const sessions = new SessionManager(
   (line: LogLine) => send('log:line', line),
   (list: SessionInfo[]) => send('session:updated', list),
 )
+
+const transfers = new TransferManager(
+  (update) => send('transfer:updated', update),
+  (line: LogLine) => send('log:line', line),
+)
+
+function transferRequestFrom(value: unknown): TransferRequest | { error: string } {
+  if (!value || typeof value !== 'object') return { error: 'That transfer is not valid.' }
+  const record = value as { serial?: unknown; direction?: unknown; target?: unknown; paths?: unknown }
+  if (typeof record.serial !== 'string' || record.serial.length > 128) return { error: 'That phone is not available.' }
+  if (record.direction !== 'send' && record.direction !== 'get') return { error: 'That transfer is not supported.' }
+  if (typeof record.target !== 'string' || record.target.length > 1024) {
+    return { error: record.direction === 'send' ? 'Choose a folder on the phone.' : 'Choose a folder on this PC.' }
+  }
+  if (!Array.isArray(record.paths) || record.paths.length === 0 || record.paths.length > 500) {
+    return { error: 'Choose at least one item to move.' }
+  }
+  const paths: string[] = []
+  for (const item of record.paths) {
+    if (typeof item !== 'string' || item.length === 0 || item.length > 1024) {
+      return { error: 'One of those items cannot be read. Choose it again.' }
+    }
+    paths.push(item)
+  }
+  return { serial: record.serial, direction: record.direction, target: record.target, paths }
+}
 
 async function readVersion(scrcpy: string, adb: string): Promise<string | null> {
   const result = await runProcess(scrcpy, ['--version'], { timeoutMs: 8_000, env: toolEnv(adb) })
@@ -288,6 +316,53 @@ function registerIpc() {
     return result
   })
 
+  ipcMain.handle('files:list', async (_event, payload: unknown) => {
+    if (!payload || typeof payload !== 'object') {
+      return { path: '', entries: [], error: 'Choose a folder on the phone.' }
+    }
+    const record = payload as { serial?: unknown; path?: unknown }
+    if (typeof record.serial !== 'string' || typeof record.path !== 'string') {
+      return { path: '', entries: [], error: 'Choose a folder on the phone.' }
+    }
+    const resolved = requireTools()
+    if ('error' in resolved) return { path: record.path, entries: [], error: resolved.error }
+    return listDeviceFolder(resolved.adb, record.serial, record.path)
+  })
+
+  ipcMain.handle('files:pick', async (_event, kind: unknown) => {
+    const properties: Array<'openFile' | 'openDirectory' | 'multiSelections'> =
+      kind === 'files' ? ['openFile', 'multiSelections'] : ['openDirectory']
+    const title =
+      kind === 'files'
+        ? 'Choose files to send'
+        : kind === 'folder'
+          ? 'Choose a folder to send'
+          : 'Choose a folder on this PC'
+    const options = { title, properties, ...(kind === 'destination' ? { buttonLabel: 'Use this folder' } : {}) }
+    const result = mainWindow
+      ? await dialog.showOpenDialog(mainWindow, options)
+      : await dialog.showOpenDialog(options)
+    if (result.canceled) return kind === 'files' ? [] : null
+    return kind === 'files' ? result.filePaths : (result.filePaths[0] ?? null)
+  })
+
+  ipcMain.handle('transfer:start', async (_event, payload: unknown) => {
+    const resolved = requireTools()
+    if ('error' in resolved) return { ok: false, error: resolved.error }
+    const request = transferRequestFrom(payload)
+    if ('error' in request) return request
+    const device = lastSnapshot.devices.find((item) => item.serial === request.serial)
+    if (!device || device.state !== 'device') {
+      return { ok: false, error: 'That phone is not ready. Unlock it and try again.' }
+    }
+    return transfers.start(resolved.adb, request, device.model)
+  })
+
+  ipcMain.handle('transfer:cancel', async (_event, id: unknown) => {
+    if (typeof id !== 'string') return { ok: false, error: 'That transfer has already finished.' }
+    return transfers.cancel(id)
+  })
+
   ipcMain.handle('config:save', async (_event, patch: unknown) => {
     if (!patch || typeof patch !== 'object') return
     const record = patch as { theme?: unknown; activeProfileId?: unknown; settings?: unknown }
@@ -426,6 +501,7 @@ if (!locked) {
   app.on('before-quit', () => {
     if (pollTimer) clearInterval(pollTimer)
     sessions.stopAll()
+    transfers.dispose()
   })
 
   app.on('window-all-closed', () => {
