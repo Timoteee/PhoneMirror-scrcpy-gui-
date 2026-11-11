@@ -19,6 +19,7 @@ export function DevicePane({
   refreshing,
   onRefresh,
   onWifi,
+  onFiles,
   onStart,
   onStop,
   onStartAll,
@@ -37,6 +38,7 @@ export function DevicePane({
   refreshing: boolean
   onRefresh: () => void
   onWifi: () => void
+  onFiles: () => void
   onStart: () => void
   onStop: (serial: string) => void
   onStartAll: () => void
@@ -114,9 +116,27 @@ export function DevicePane({
       </div>
 
       {devices.length > 0 && (
-        <Button variant="ghost" className="justify-start px-1" onClick={onWifi}>
-          Connect over Wi-Fi
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="ghost" className="px-1" onClick={onWifi}>
+            Connect over Wi-Fi
+          </Button>
+          {selectedDevice?.state === 'device' ? (
+            <Button variant="ghost" className="px-1" onClick={onFiles}>
+              Files…
+            </Button>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="block" tabIndex={0}>
+                  <Button variant="ghost" className="px-1" disabled>
+                    Files…
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>Select a ready phone to move files.</TooltipContent>
+            </Tooltip>
+          )}
+        </div>
       )}
 
       <div>

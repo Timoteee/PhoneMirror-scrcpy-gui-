@@ -2,11 +2,12 @@ import type { ActionResult, Bootstrap, DeviceSnapshot, LogLine, MirrorSettings, 
 import { useEffect, useState } from 'react'
 import { AboutDialog } from '@/components/AboutDialog'
 import { DevicePane } from '@/components/DevicePane'
+import { FilesDialog } from '@/components/FilesDialog'
 import { LogPane } from '@/components/LogPane'
 import { SettingsPane } from '@/components/SettingsPane'
 import { WirelessDialog } from '@/components/WirelessDialog'
 import { Button } from '@/components/ui/button'
-import { SHOTS, SAMPLE_DEVICES, sampleLog, type ShotStep } from '@/screenshot'
+import { SHOTS, SAMPLE_DEVICES, SAMPLE_PREVIEW, sampleLog, type ShotStep } from '@/screenshot'
 
 const emptySnapshot: DeviceSnapshot = { devices: [], error: null }
 
@@ -26,6 +27,7 @@ export function App() {
   const [refreshing, setRefreshing] = useState(false)
   const [pending, setPending] = useState(false)
   const [wirelessOpen, setWirelessOpen] = useState(false)
+  const [filesOpen, setFilesOpen] = useState(false)
   const [wirelessTask, setWirelessTask] = useState<'connect' | 'pair' | 'tcpip'>('connect')
   const [aboutOpen, setAboutOpen] = useState(false)
   const [banner, setBanner] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null)
@@ -117,6 +119,7 @@ export function App() {
         setTheme(step.theme)
         setWirelessOpen(step.wireless)
         setWirelessTask(step.wireless ? 'pair' : 'connect')
+        setFilesOpen(step.files)
         setLogOpen(step.log)
         setForcedOpen(step.expand)
         setLines(step.log ? sampleLog() : [])
@@ -241,6 +244,8 @@ export function App() {
     }
   }
 
+  const selectedDevice = snapshot.devices.find((device) => device.serial === selected) ?? null
+
   if (!api) return <p className="p-6">Open Phone Mirror as a desktop app.</p>
   if (!boot || !settings) {
     return (
@@ -300,6 +305,7 @@ export function App() {
             setWirelessTask('connect')
             setWirelessOpen(true)
           }}
+          onFiles={() => setFilesOpen(true)}
           onStart={() => void start()}
           onStop={(serial) => void stop(serial)}
           onStartAll={() => void startAll()}
@@ -363,6 +369,23 @@ export function App() {
         onDone={onWifiDone}
       />
       <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} version={scrcpyVersion} />
+      <FilesDialog
+        open={filesOpen}
+        onOpenChange={setFilesOpen}
+        device={selectedDevice}
+        initialTab={boot.screenshot ? 'get' : undefined}
+        preview={boot.screenshot ? SAMPLE_PREVIEW : undefined}
+        onDone={(result) => {
+          if (result.ok) {
+            const text = result.message ?? 'Finished.'
+            setBanner({ tone: 'success', text })
+            setLive(text)
+          } else {
+            setBanner({ tone: 'danger', text: result.error })
+            setLive(result.error)
+          }
+        }}
+      />
       <div className="sr-only" aria-live="polite">
         {live}
       </div>

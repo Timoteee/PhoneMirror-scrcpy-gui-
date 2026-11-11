@@ -15,7 +15,8 @@ Top tasks, in order:
 3. Connect a phone that is not plugged in: type an address, pair with a code, or switch a USB phone to Wi-Fi.
 4. Change picture, sound, window, input, or capture without learning flag names.
 5. Reuse a preset (low latency, high quality, recording) and save their own.
-6. Read a plain-language reason when it fails, with the raw scrcpy log one click away.
+6. Move a file between the PC and the phone without knowing adb paths or flags.
+7. Read a plain-language reason when it fails, with the raw scrcpy log one click away.
 
 ## Comparable products
 
@@ -38,7 +39,7 @@ Hierarchy on the home screen:
 2. One filled button: **Start mirroring**. It becomes **Stop mirroring** when the selected phone is already running.
 3. Everything else is secondary: Wi-Fi, presets, setting groups, the command, the log.
 
-One primary button per view. The Wi-Fi dialog has one primary button that matches the selected task (Connect, Pair, or Switch to Wi-Fi).
+One primary button per view. The Wi-Fi dialog has one primary button that matches the selected task (Connect, Pair, or Switch to Wi-Fi). The Files dialog has one primary per tab (**Send to phone**, **Get from phone**); it is a task dialog, not a second home screen, and it never adds a filled button to the main window.
 
 Setting groups are collapsed by default. Each header shows the current choice in plain language ("Native · 8 Mbps · H.264") so people can scan without expanding. Tooltips on labels explain the consequence, including the scrcpy flag, for the secondary user.
 
@@ -115,6 +116,7 @@ Every region has an empty, loading, error, and success state:
 - **Devices.** Loading: "Looking for phones…" with a quiet progress text, not a spinner-only void. Empty: numbered steps for USB debugging, plus Connect over Wi-Fi. Error: adb or scrcpy missing, with the recovery action. Success: a card per phone with model, USB or Wi-Fi, and Ready / Allow on phone / Offline.
 - **Mirroring.** Idle, starting, running (success), failed (sentence + log opens).
 - **Wireless.** Invalid address inline, working, connected, pairing failed.
+- **Files.** Send: nothing chosen yet, items ready, invalid phone folder inline, transferring (percent bar for a file, indeterminate bar for a folder or an install), cancelled, failed. Get: reading a folder, empty folder, folder that Android will not open (with the parent-folder hint), files selected, no PC folder chosen yet, transferring, done. The progress bar is an accent fill on the sunken surface with a body-size caption; it introduces no new colour.
 - **Recording.** No file chosen yet is an error on the primary button, not a silent no-op.
 - **Log.** Empty copy when nothing has run.
 
@@ -127,4 +129,4 @@ Every region has an empty, loading, error, and success state:
 
 ## Out of scope
 
-Embedded video, APK install, file drag-and-drop, automation, accounts, and theming beyond light, dark, and system. Those are how the products above grew past a single primary action.
+Embedded video, automation, accounts, and theming beyond light, dark, and system. Those are how the products above grew past a single primary action. File transfer and APK install used to sit here; `docs/DECISIONS.md` ADR-1 records why they are now owned, and scrcpy's own drag-and-drop remains a shortcut for people who prefer it.

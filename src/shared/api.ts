@@ -1,4 +1,5 @@
 import type { ActionResult, Bootstrap, DeviceSnapshot, LogLine, MirrorSettings, Profile, SessionInfo, ThemeChoice } from './types'
+import type { FolderListing, StartTransferResult, TransferRequest, TransferUpdate } from './transfer'
 
 export interface StartMirrorPayload {
   serial: string
@@ -28,6 +29,11 @@ export interface ConfigPatch {
   settings?: MirrorSettings
 }
 
+export interface FolderQuery {
+  serial: string
+  path: string
+}
+
 export interface PhoneMirrorApi {
   bootstrap: () => Promise<Bootstrap>
   refreshDevices: () => Promise<DeviceSnapshot>
@@ -50,6 +56,14 @@ export interface PhoneMirrorApi {
   resetScrcpy: () => Promise<{ path: string | null; version: string | null; error: string | null }>
   readLicense: () => Promise<string>
   copyText: (text: string) => Promise<void>
+  listDeviceFolder: (query: FolderQuery) => Promise<FolderListing>
+  pickFiles: () => Promise<string[]>
+  pickFolder: () => Promise<string | null>
+  pickDestination: () => Promise<string | null>
+  startTransfer: (request: TransferRequest) => Promise<StartTransferResult>
+  cancelTransfer: (id: string) => Promise<ActionResult>
+  onTransfer: (cb: (update: TransferUpdate) => void) => () => void
+  getDroppedPaths: (files: unknown[]) => string[]
   captureShot: (name: string) => Promise<void>
   finishShots: () => Promise<void>
 }

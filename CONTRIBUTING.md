@@ -8,7 +8,7 @@ Use the [bug report](https://github.com/Timoteee/PhoneMirror-scrcpy-gui-/issues/
 
 ## Suggesting a change
 
-Use the [feature request](https://github.com/Timoteee/PhoneMirror-scrcpy-gui-/issues/new?template=feature_request.yml) template. Phone Mirror is a control panel for scrcpy, so a change that adds a second product (file transfer, an embedded video surface, accounts) needs a strong reason. [DESIGN.md](DESIGN.md) records the interface decisions and the jobs the app is for.
+Use the [feature request](https://github.com/Timoteee/PhoneMirror-scrcpy-gui-/issues/new?template=feature_request.yml) template. Phone Mirror is a control panel for scrcpy, so a change that adds a second product (an embedded video surface, accounts, device automation) needs a strong reason. [DESIGN.md](DESIGN.md) records the interface decisions and the jobs the app is for, and [docs/DECISIONS.md](docs/DECISIONS.md) records why the shipped shape won.
 
 ## Developing
 
@@ -49,6 +49,8 @@ A few constraints are easy to break and worth keeping:
 
 - One filled primary button on the main window. That button is **Start mirroring** (or **Stop mirroring** while the selected phone is running).
 - Spawn scrcpy and adb with an argument array. Do not build a shell command from anything the user typed.
+- Device paths that reach `adb shell` go through `isSafeDevicePath` and `shellQuoteDevicePath` in `src/shared/transfer.ts`. `adb push`, `adb pull` and `adb install` take paths as real arguments and must not be quoted or shell-built.
+- Transfers do not use `runProcess`. Its timeout and output cap are wrong for a transfer; `src/main/transfer.ts` owns that child process, its progress parsing and its cancel.
 - The renderer has no Node access. Add IPC for a named action, and validate the payload in the main process.
 - Keep scrcpy's Apache-2.0 license in `third_party/scrcpy/LICENSE`, in the bundled resources, and reachable from About.
 - Plain language on buttons and labels. Flag names belong in the command preview and in tooltips.

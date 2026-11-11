@@ -2,6 +2,22 @@
 
 All notable changes to Phone Mirror are documented here. Version numbers follow the releases on GitHub.
 
+## Unreleased
+
+File transfer, in both directions, over adb. The scope reversal and its cost are recorded in
+[`docs/DECISIONS.md`](docs/DECISIONS.md) ADR-1.
+
+- **Files…** on the selected phone opens a Send / Get dialog
+- Send files (multi-select), a folder with everything inside it, or drop files onto the dialog
+- `.apk` files are installed with `adb install -r` instead of copied
+- Send target defaults to `/sdcard/Download` and is checked before anything runs
+- Get lists one phone folder at a time with an editable location bar fallback
+- Sequential transfers with a live percent bar, and Cancel
+- Pulled files never overwrite a PC file; the new name is `photo (1).jpg`
+- Progress is measured from the bytes on the receiving side, because adb prints no percentages into a pipe; folders and installs stay indeterminate
+- Folders with thousands of entries list completely (the old 200 KB output cap silently cut them in half); anything still too large says so, and the dialog renders the first 500 rows with a count
+- Android's scoped-storage blocks are reported as a sentence, not raw adb output
+
 ## 1.1.0 — 2026-11-06
 
 Linux x64 packages, alongside the Windows builds.
