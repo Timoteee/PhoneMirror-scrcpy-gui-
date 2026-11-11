@@ -43,6 +43,7 @@ The mirror window is scrcpy itself.
 - Stay awake, screen off, show touches, always on top, fullscreen, borderless, view only
 - Camera or a virtual display, when you want something other than the phone screen
 - Plain-language errors, with the original scrcpy and adb log one click away
+- Move files both ways: send files or whole folders to the phone, install an APK, and copy photos or videos back to the PC, with a percent bar and Cancel
 - Light, dark, and system themes
 - Official scrcpy 5.0.1 for Windows and Linux, including `adb`, checked against the published SHA-256 sums before it is bundled
 - scrcpy and adb are started with an argument array. Values you type are not passed through a shell
@@ -171,6 +172,36 @@ Plug in a phone that is already allowed, and join it to Wi-Fi. Choose **USB to W
   <img src="docs/screenshots/wireless-light.png" alt="Wi-Fi pairing dialog with IP address, pairing port, pairing code, and connection port" width="880" />
 </p>
 
+## Files
+
+Open **Files…** next to **Connect over Wi-Fi**. The dialog has two halves, and either one keeps running if you close the window.
+
+### Send to phone
+
+1. Choose **Add files…**, **Add folder…**, or drop files and folders onto the dialog.
+2. **Send to** is where they land on the phone. `/sdcard/Download` is the usual place and the default.
+3. Choose **Send to phone**.
+
+A folder is copied with everything inside it, into a folder of the same name. An `.apk` file is installed instead of copied, and shows on the phone's home screen when it finishes.
+
+### Get from phone
+
+The dialog lists one folder at a time, starting in `/sdcard/Download`. Choose a folder to open it, or type a path and choose **Go**. **Up** goes to the parent folder, and `/` is the top.
+
+Tick the files you want, choose **Choose folder on this PC…**, then **Get from phone**. A file that already exists on the PC is saved next to it as `photo (1).jpg` rather than overwritten.
+
+### Progress and Cancel
+
+One transfer runs at a time, sequentially. The dialog shows `2 of 5 · 41% · IMG_0002.jpg` and a percent bar, and **Cancel** stops it. Cancelling can leave a partial file on the phone; delete it in the phone's Files app. Every raw adb line is in the log at the bottom of the window.
+
+A folder send and an APK install show a bar with no percentage, because adb reports nothing measurable for them. Copying a file to the phone or back does show a percentage, worked out from how many bytes have arrived.
+
+Two limits worth knowing. Android 11 and newer block adb from some folders, such as `/sdcard/Android/data`; the dialog says so instead of failing silently. And this moves files over adb, so it works whether or not the phone is mirroring, and even while **View only** is on.
+
+<p align="center">
+  <img src="docs/screenshots/files-light.png" alt="Files dialog listing the Camera folder on a Pixel 8, with photos and a video to copy to the PC" width="880" />
+</p>
+
 ## Keyboard
 
 | Key | Action |
@@ -198,7 +229,9 @@ Inside the scrcpy window, the keyboard and mouse go to the phone unless you set 
 
 **Which Android versions work?** scrcpy 5.0.1 needs Android 5 or newer. Wireless pairing with a code needs Android 11 or newer. Audio needs Android 11 or newer.
 
-**Does this install an app on the phone?** No. scrcpy starts a temporary server over adb and removes it when the session ends.
+**Does this install an app on the phone?** No, apart from files you send yourself. scrcpy starts a temporary server over adb and removes it when the session ends. Phone Mirror never installs anything on its own; an `.apk` you add under Files is installed because you asked for it.
+
+**Which phone folders can I open under Files?** Anything adb is allowed to read. On Android 11 or newer, `/sdcard/Android/data` and `/sdcard/Android/obb` are blocked by the system, so the dialog explains that and you pick another folder. `/sdcard/Download`, `/sdcard/DCIM`, `/sdcard/Pictures`, and `/sdcard/Movies` all work.
 
 **Can I use my own scrcpy?** Open **Advanced** and choose the scrcpy program from an official build (`scrcpy.exe` on Windows, `scrcpy` on Linux). adb has to sit in the same folder.
 
